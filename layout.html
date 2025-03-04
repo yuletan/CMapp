@@ -37,6 +37,23 @@
         width: 300px;
         padding: 8px;
       }
+
+      .language-tab {
+        position: absolute;
+        top: 70px; /* Positioned below the search container */
+        left: 50px;
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 8px 12px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        font-family: Arial, sans-serif;
+      }
+
+      .language-tab label {
+        margin-right: 5px;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -73,6 +90,24 @@
 
     <!-- Map initialization script -->
     <script>
+      async function getAvailableLanguages() {
+        try {
+          const response = await fetch(
+            "https://translate.astian.org/languages"
+          );
+          const languages = await response.json();
+
+          console.log("Supported Languages:", languages);
+
+          return languages;
+        } catch (error) {
+          console.error("Error fetching languages:", error);
+          return [];
+        }
+      }
+
+      // Call the function to check supported languages
+      getAvailableLanguages();
       console.log("Script is running!");
       let cities = []; // Global variable to hold city data
       // Initialize map centered
@@ -81,24 +116,38 @@
 
       const citiesLayer = L.layerGroup().addTo(map);
 
-      // Helper function: call LibreTranslate API
+      const translationCache = {};
+
       async function translateCityName(cityName, targetLang) {
+        const cacheKey = `${cityName}_${targetLang}`;
+        if (translationCache[cacheKey]) {
+          return translationCache[cacheKey];
+        }
         try {
-          const response = await fetch("https://libretranslate.de/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              q: cityName,
-              source: "auto",
-              target: targetLang,
-              format: "text",
-            }),
-          });
-          const data = await response.json();
-          return data.translatedText;
+          const response = await fetch(
+            "https://deep-translate1.p.rapidapi.com/language/translate/v2/translate",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-rapidapi-host": "deep-translate1.p.rapidapi.com",
+                "x-rapidapi-key":
+                  "2b6cf764a7msh3d7b2f55a1c3cb3p1aa7f3jsnd8600af164a5",
+              },
+              body: JSON.stringify({
+                q: cityName,
+                target: targetLang,
+                source: "auto",
+              }),
+            }
+          );
+          const result = await response.json();
+          const translated = result.translatedText || cityName;
+          translationCache[cacheKey] = translated;
+          return translated;
         } catch (error) {
           console.error("Translation error:", error);
-          return cityName; // Fallback to original name if translation fails
+          return cityName;
         }
       }
 
@@ -121,16 +170,16 @@
           );
 
           const popupContent = `
-      <div class="weather-popup">
-        <h3>${city.tags.name}</h3>
-        <p>🌡️ Temperature: ${data.current_weather.temperature}°C</p>
-        <p>🌬️ Wind: ${data.current_weather.windspeed} km/h</p>
-        <p>💧 Humidity: ${data.hourly.relativehumidity_2m[0]}%</p>
-        <p>☀️ UV Index: ${data.daily.uv_index_max[0]}</p>
-        <button onclick="showForecast(${city.lat}, ${city.lon})">7-Day Forecast</button>
-        <button onclick="showHistory(${city.lat}, ${city.lon})">Historical Data</button>
-      </div>
-    `;
+            <div class="weather-popup">
+              <h3>${translatedName}</h3>
+              <p>🌡️ Temperature: ${data.current_weather.temperature}°C</p>
+              <p>🌬️ Wind: ${data.current_weather.windspeed} km/h</p>
+              <p>💧 Humidity: ${data.hourly.relativehumidity_2m[0]}%</p>
+              <p>☀️ UV Index: ${data.daily.uv_index_max[0]}</p>
+              <button onclick="showForecast(${city.lat}, ${city.lon})">7-Day Forecast</button>
+              <button onclick="showHistory(${city.lat}, ${city.lon})">Historical Data</button>
+            </div>
+          `;
 
           // Create and configure the marker
           const marker = L.marker([city.lat, city.lon]).addTo(citiesLayer);
@@ -154,25 +203,45 @@
         await Promise.all(markerPromises);
       }
 
+      // Global cache for city data keyed by the bounding box
+      const citiesCache = {};
+
+      // Helper function to create a cache key from map bounds with limited precision
+      function getBoundsKey(bounds) {
+        const precision = 2; // Adjust precision as needed
+        const south = bounds.getSouth().toFixed(precision);
+        const west = bounds.getWest().toFixed(precision);
+        const north = bounds.getNorth().toFixed(precision);
+        const east = bounds.getEast().toFixed(precision);
+        return `${south}_${west}_${north}_${east}`;
+      }
+
       async function loadCities() {
-        // Clear any existing markers/popups
+        // Clear existing markers/popups
         citiesLayer.clearLayers();
-        const bounds = map.getBounds(); // Current map view bounds
-        console.log("Fetching cities within bounds:", bounds);
+        const bounds = map.getBounds();
+        const boundsKey = getBoundsKey(bounds);
 
-        try {
-          const response = await fetch(
-            `https://overpass-api.de/api/interpreter?data=[out:json];node[place=city](${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()});out;`
-          );
-
-          if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-          const data = await response.json();
-
-          if (!data.elements) throw new Error("Invalid response format");
-          cities = data.elements;
-        } catch (error) {
-          console.error("Error fetching cities:", error);
-          cities = [];
+        // Check if cities data for these bounds is already cached
+        if (citiesCache[boundsKey]) {
+          console.log("Using cached cities data for bounds:", boundsKey);
+          cities = citiesCache[boundsKey];
+        } else {
+          console.log("Fetching cities within bounds:", bounds);
+          try {
+            const response = await fetch(
+              `https://overpass-api.de/api/interpreter?data=[out:json];node[place=city](${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()});out;`
+            );
+            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+            const data = await response.json();
+            if (!data.elements) throw new Error("Invalid response format");
+            cities = data.elements;
+            // Cache the fetched data for these bounds
+            citiesCache[boundsKey] = cities;
+          } catch (error) {
+            console.error("Error fetching cities:", error);
+            cities = [];
+          }
         }
       }
       // When the zoom level changes:
@@ -181,8 +250,13 @@
           // When zoomed in, load the cities (which auto-opens the popups)
           loadCities().then(createWeatherMarkers);
         } else {
-          // When zoomed out, remove all city markers (and popups)
-          citiesLayer.clearLayers();
+          // When zoomed out, remove all city markers (and popups) and add a change event listener
+          document
+            .getElementById("languageSelect")
+            .addEventListener("change", () => {
+              citiesLayer.clearLayers();
+              createWeatherMarkers();
+            });
         }
       });
 
@@ -190,7 +264,16 @@
       if (map.getZoom() >= 8) {
         loadCities().then(createWeatherMarkers);
       }
+
+      const weatherCache = {};
+
       async function getWeatherData(lat, lon) {
+        // Create a unique key based on the coordinates
+        const key = `${lat}_${lon}`;
+        // Return cached data if available
+        if (weatherCache[key]) {
+          return weatherCache[key];
+        }
         console.log(`Fetching weather for: ${lat}, ${lon}`);
 
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=relativehumidity_2m,windspeed_10m&daily=uv_index_max&temperature_unit=celsius&windspeed_unit=kmh`;
@@ -199,6 +282,7 @@
           const response = await fetch(url);
           const data = await response.json();
           console.log("Weather data received:", data);
+          weatherCache[key] = data;
           return data;
         } catch (error) {
           console.error("Error fetching weather data:", error);
@@ -216,13 +300,13 @@
         const forecastContent = data.daily.time
           .map(
             (date, index) => `
-                <div class="forecast-day">
-                    <strong>${date}</strong><br>
-                    Max: ${data.daily.temperature_2m_max[index]}°C<br>
-                    Min: ${data.daily.temperature_2m_min[index]}°C<br>
-                    Wind: ${data.daily.windspeed_10m_max[index]} km/h
-                </div>
-            `
+                      <div class="forecast-day">
+                          <strong>${date}</strong><br>
+                          Max: ${data.daily.temperature_2m_max[index]}°C<br>
+                          Min: ${data.daily.temperature_2m_min[index]}°C<br>
+                          Wind: ${data.daily.windspeed_10m_max[index]} km/h
+                      </div>
+                  `
           )
           .join("");
 
@@ -249,13 +333,13 @@
         const historyContent = data.daily.time
           .map(
             (date, index) => `
-                <div class="history-day">
-                    <strong>${date}</strong><br>
-                    Max Temp: ${data.daily.temperature_2m_max[index]}°C<br>
-                    Wind: ${data.daily.windspeed_10m_max[index]} km/h<br>
-                    Rain: ${data.daily.precipitation_sum[index]} mm
-                </div>
-            `
+                      <div class="history-day">
+                          <strong>${date}</strong><br>
+                          Max Temp: ${data.daily.temperature_2m_max[index]}°C<br>
+                          Wind: ${data.daily.windspeed_10m_max[index]} km/h<br>
+                          Rain: ${data.daily.precipitation_sum[index]} mm
+                      </div>
+                  `
           )
           .join("");
 
