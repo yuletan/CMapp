@@ -20,6 +20,12 @@
       rel="stylesheet" 
       href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" 
     />
+    
+    <!-- Chart.js for temperature chart -->
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" 
+    />
 
     <!-- Map container styling -->
     <style>
@@ -86,6 +92,26 @@
         cursor: pointer;
         border-radius: 4px;
       }
+      
+      .hourly-temp-btn {
+        background-color: #4361ee;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      
+      .chart-container {
+        width: 100%;
+        height: 200px;
+        margin-top: 10px;
+      }
 
       /* Make Leaflet popup wider to fit our content */
       .leaflet-popup-content {
@@ -137,6 +163,11 @@
     <script 
       src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js">
     </script>
+    
+    <!-- Chart.js for temperature chart -->
+    <script 
+      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js">
+    </script>
 
     <!-- Map initialization script -->
     <script>
@@ -182,6 +213,13 @@
           const lon = parseFloat(e.target.getAttribute("data-lon"));
           const cityName = e.target.getAttribute("data-city-name");
           await loadWeatherForCity(cityId, lat, lon, cityName);
+        }
+        
+        // Check if clicked element is an hourly temperature button
+        if (e.target && e.target.classList.contains("hourly-temp-btn")) {
+          const lat = parseFloat(e.target.getAttribute("data-lat"));
+          const lon = parseFloat(e.target.getAttribute("data-lon"));
+          await showHourlyTemperature(lat, lon);
         }
       });
 
@@ -263,6 +301,7 @@
               <p>☀️ UV Index: ${data.daily.uv_index_max[0]}</p>
               <button class="forecast-btn" data-lat="${lat}" data-lon="${lon}">7-Day Forecast</button>
               <button class="history-btn" data-lat="${lat}" data-lon="${lon}">Historical Data</button>
+              <button class="hourly-temp-btn" data-lat="${lat}" data-lon="${lon}">Hourly Temperature</button>
             </div>
           `;
           
@@ -428,6 +467,112 @@
         } catch (error) {
           console.error("Error fetching historical data:", error);
           loadingPopup.setContent("<div class='weather-popup'><h3>Error fetching historical data</h3></div>");
+        }
+      }
+      
+      // Show hourly temperature chart
+      async function showHourlyTemperature(lat, lon) {
+        console.log("Showing hourly temperature for:", lat, lon);
+        
+        // Show loading popup
+        const loadingPopup = L.popup()
+          .setLatLng([lat, lon])
+          .setContent('<div class="loading-spinner">Loading hourly temperature data...</div>')
+          .openOn(map);
+          
+        const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&forecast_days=1&timezone=auto`;
+
+        try {
+          const response = await fetch(hourlyUrl);
+          const data = await response.json();
+          
+          if (!data.hourly || !data.hourly.temperature_2m || !data.hourly.time) {
+            throw new Error("Invalid data format received from API");
+          }
+          
+          // Process the data for the chart
+          const chartLabels = data.hourly.time.map(time => {
+            const date = new Date(time);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          });
+          
+          const chartData = data.hourly.temperature_2m;
+          const unit = data.hourly_units?.temperature_2m || '°C';
+          
+          // Create a unique ID for the chart canvas
+          const chartId = `temp-chart-${Date.now()}`;
+          
+          // Update popup with chart container
+          loadingPopup.setContent(`
+            <div class="weather-popup">
+              <h3>24-Hour Temperature Forecast</h3>
+              <div class="chart-container">
+                <canvas id="${chartId}"></canvas>
+              </div>
+            </div>
+          `);
+          
+          // Wait for the DOM to update
+          setTimeout(() => {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: chartLabels,
+                datasets: [{
+                  label: `Temperature (${unit})`,
+                  data: chartData,
+                  borderColor: 'rgb(75, 192, 192)',
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                  tension: 0.1,
+                  pointRadius: 2,
+                  pointHoverRadius: 5
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    title: {
+                      display: true,
+                      text: `Temperature (${unit})`
+                    }
+                  },
+                  x: {
+                    ticks: {
+                      maxRotation: 90,
+                      minRotation: 45,
+                      autoSkip: true,
+                      maxTicksLimit: 12
+                    },
+                    title: {
+                      display: true,
+                      text: 'Time'
+                    }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top'
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return `${context.dataset.label}: ${context.parsed.y}`;
+                      }
+                    }
+                  }
+                }
+              }
+            });
+          }, 100);
+          
+        } catch (error) {
+          console.error("Error fetching hourly temperature data:", error);
+          loadingPopup.setContent("<div class='weather-popup'><h3>Error fetching hourly temperature data</h3></div>");
         }
       }
 
