@@ -10,21 +10,21 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin="anonymous"
     />
-    
+
     <!-- Leaflet MarkerCluster CSS -->
-    <link 
-      rel="stylesheet" 
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" 
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"
     />
-    <link 
-      rel="stylesheet" 
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" 
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"
     />
-    
+
     <!-- Chart.js for temperature chart -->
-    <link 
-      rel="stylesheet" 
-      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css" 
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css"
     />
 
     <!-- Map container styling -->
@@ -50,7 +50,7 @@
         background: white;
         padding: 5px;
         border-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       }
 
       #searchInput {
@@ -66,21 +66,24 @@
         background: white;
         padding: 5px;
         border-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
       }
 
       .weather-popup {
         max-width: 300px;
+        position: relative; /* Parent for absolute positioning */
       }
 
-      .forecast-day, .history-day {
+      .forecast-day,
+      .history-day {
         margin-bottom: 10px;
         padding-bottom: 5px;
         border-bottom: 1px solid #eee;
       }
-      
-      .forecast-btn, .history-btn {
-        background-color: #4CAF50;
+
+      .forecast-btn,
+      .history-btn {
+        background-color: #4caf50;
         color: white;
         border: none;
         padding: 5px 10px;
@@ -92,7 +95,7 @@
         cursor: pointer;
         border-radius: 4px;
       }
-      
+
       .hourly-temp-btn {
         background-color: #4361ee;
         color: white;
@@ -106,7 +109,7 @@
         cursor: pointer;
         border-radius: 4px;
       }
-      
+
       .chart-container {
         width: 100%;
         height: 200px;
@@ -119,11 +122,110 @@
         min-width: 200px;
         max-width: 300px;
       }
-      
+
       /* Loading spinner */
       .loading-spinner {
         text-align: center;
         padding: 10px;
+      }
+
+      /* Add these styles to your CSS file */
+
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: absolute; /* Relative to .weather-popup */
+        top: 100%; /* Below the parent content */
+        left: 0;
+        width: 100%; /* Match popup width */
+        background-color: white;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1000; /* Ensure it’s above other content */
+      }
+
+      .modal-content {
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+      }
+
+      .date-selection {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .date-selection div {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .date-selection input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      /* Chart container styles */
+      #chartContainer {
+        display: none;
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        background-color: #f9f9f9;
+      }
+
+      .chart-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+      }
+
+      .data-type-tabs {
+        display: flex;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #ddd;
+        overflow-x: auto;
+      }
+
+      .data-tab {
+        background-color: #f1f1f1;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-size: 14px;
+      }
+
+      .data-tab:hover {
+        background-color: #ddd;
+      }
+
+      .data-tab.active {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      #weatherChart {
+        min-height: 300px;
       }
     </style>
   </head>
@@ -148,9 +250,11 @@
         <option value="fr">French</option>
       </select>
     </div>
-    
+
     <!-- Map container -->
     <div id="map"></div>
+    <div id="chartContainer" style="display: none"></div>
+    <div id="chartdiv" style="width: 100%; height: 500px"></div>
 
     <!-- Leaflet JS -->
     <script
@@ -158,16 +262,12 @@
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin="anonymous"
     ></script>
-    
+
     <!-- Leaflet MarkerCluster JS -->
-    <script 
-      src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js">
-    </script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+
     <!-- Chart.js for temperature chart -->
-    <script 
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js">
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 
     <!-- Map initialization script -->
     <script>
@@ -183,29 +283,29 @@
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: true,
         zoomToBoundsOnClick: true,
-        maxClusterRadius: 80 // Adjust this value to control cluster size
+        maxClusterRadius: 80, // Adjust this value to control cluster size
       });
-      
+
       map.addLayer(markers);
 
       let weatherCache = {};
 
       // Set up event delegation for the popup buttons
-      document.addEventListener("click", async function(e) {
+      document.addEventListener("click", async function (e) {
         // Check if clicked element is a forecast button
         if (e.target && e.target.classList.contains("forecast-btn")) {
           const lat = parseFloat(e.target.getAttribute("data-lat"));
           const lon = parseFloat(e.target.getAttribute("data-lon"));
           await showForecast(lat, lon);
         }
-        
+
         // Check if clicked element is a history button
         if (e.target && e.target.classList.contains("history-btn")) {
           const lat = parseFloat(e.target.getAttribute("data-lat"));
           const lon = parseFloat(e.target.getAttribute("data-lon"));
           await showHistory(lat, lon);
         }
-        
+
         // Check if clicked element is a load-weather button
         if (e.target && e.target.classList.contains("load-weather-btn")) {
           const cityId = e.target.getAttribute("data-city-id");
@@ -214,7 +314,7 @@
           const cityName = e.target.getAttribute("data-city-name");
           await loadWeatherForCity(cityId, lat, lon, cityName);
         }
-        
+
         // Check if clicked element is an hourly temperature button
         if (e.target && e.target.classList.contains("hourly-temp-btn")) {
           const lat = parseFloat(e.target.getAttribute("data-lat"));
@@ -223,106 +323,927 @@
         }
       });
 
+      // Add these functions to your JavaScript file
+
+      // Display data for a date range
+      function normalizeDate(date) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      }
+
+      function displayDateRangeData(
+        lat,
+        lon,
+        startDate,
+        endDate,
+        chartContainer
+      ) {
+        const today = new Date();
+        const normalizedToday = normalizeDate(today);
+
+        // Define key date constraints
+        const earliestAllowedDate = new Date("2016-01-01");
+        const latestAllowedDate = new Date(normalizedToday);
+        latestAllowedDate.setDate(normalizedToday.getDate() + 15);
+        const maxDateRange = 14; // Maximum range in days
+
+        // Validate and normalize input dates
+        let normalizedStart =
+          startDate instanceof Date && !isNaN(startDate)
+            ? normalizeDate(startDate)
+            : normalizedToday;
+        let normalizedEnd =
+          endDate instanceof Date && !isNaN(endDate)
+            ? normalizeDate(endDate)
+            : normalizedStart;
+
+        // Adjust start date if before earliest allowed date
+        if (normalizedStart < earliestAllowedDate) {
+          normalizedStart = earliestAllowedDate;
+        }
+
+        // Adjust end date if after latest allowed date
+        if (normalizedEnd > latestAllowedDate) {
+          normalizedEnd = latestAllowedDate;
+        }
+
+        // Ensure the date range does not exceed 14 days
+        const dateRangeDays = Math.ceil(
+          (normalizedEnd - normalizedStart) / (1000 * 60 * 60 * 24)
+        );
+        if (dateRangeDays > maxDateRange) {
+          normalizedEnd = new Date(normalizedStart);
+          normalizedEnd.setDate(normalizedStart.getDate() + maxDateRange);
+        }
+
+        // Validate the adjusted dates
+        if (
+          normalizedStart < earliestAllowedDate ||
+          normalizedEnd > latestAllowedDate ||
+          normalizedStart > normalizedEnd
+        ) {
+          chartContainer.innerHTML =
+            "<p>Date range out of supported bounds (from 2016-01-01 to 15 days after today, max 14 days).</p>";
+          console.error("Date range error:", {
+            normalizedStart,
+            normalizedEnd,
+          });
+          return;
+        }
+
+        chartContainer.innerHTML = "";
+        chartContainer.style.display = "block";
+
+        addChartNavigation(normalizedStart, normalizedEnd, chartContainer);
+
+        const startFormatted = normalizedStart.toLocaleDateString();
+        const endFormatted = normalizedEnd.toLocaleDateString();
+        const chartTitle = document.createElement("h3");
+        chartTitle.textContent = `Weather Data: ${startFormatted} to ${endFormatted}`;
+        chartContainer.appendChild(chartTitle);
+
+        createDataTypeTabs(chartContainer);
+
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,uv_index_max,windspeed_10m_max,relative_humidity_2m_mean&start_date=${
+          normalizedStart.toISOString().split("T")[0]
+        }&end_date=${normalizedEnd.toISOString().split("T")[0]}&timezone=auto`;
+        console.log("Fetching data from:", url);
+
+        fetchDateRangeData(lat, lon, normalizedStart, normalizedEnd)
+          .then((data) => {
+            console.log("API Response:", data);
+            displayTemperatureChart(data, "daily", chartContainer);
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+            chartContainer.innerHTML +=
+              "<p>Failed to load weather data. Please try again.</p>";
+          });
+      }
+      function displaySingleDayData(date, chartContainer) {
+        chartContainer.innerHTML = "";
+        chartContainer.style.display = "block";
+
+        addSingleDayNavigation(date, chartContainer);
+
+        const dateFormatted = date.toLocaleDateString();
+        const chartTitle = document.createElement("h3");
+        chartTitle.textContent = `Weather Data for ${dateFormatted}`;
+        chartContainer.appendChild(chartTitle);
+
+        createDataTypeTabs(chartContainer);
+
+        fetchSingleDayData(date)
+          .then((data) => {
+            displayTemperatureChart(data, "hourly", chartContainer);
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+            chartContainer.innerHTML +=
+              "<p>Failed to load weather data. Please try again.</p>";
+          });
+      }
+
+      // Add these helper functions to your JavaScript file
+
+      // Clear the chart container
+      function clearChartContainer() {
+        const chartContainer = document.getElementById("chartContainer");
+        chartContainer.innerHTML = "";
+      }
+
+      // Add navigation for date range chart
+      function addChartNavigation(startDate, endDate, chartContainer) {
+        const navDiv = document.createElement("div");
+        navDiv.className = "chart-navigation";
+
+        // Calculate previous and next date ranges
+        const daysDiff = Math.round(
+          (endDate - startDate) / (1000 * 60 * 60 * 24)
+        );
+
+        const prevStartDate = new Date(startDate);
+        prevStartDate.setDate(startDate.getDate() - daysDiff);
+        const prevEndDate = new Date(startDate);
+        prevEndDate.setDate(prevStartDate.getDate() + daysDiff - 1);
+
+        const nextStartDate = new Date(endDate);
+        nextStartDate.setDate(endDate.getDate() + 1);
+        const nextEndDate = new Date(nextStartDate);
+        nextEndDate.setDate(nextStartDate.getDate() + daysDiff - 1);
+
+        // Create previous button
+        const prevBtn = document.createElement("button");
+        prevBtn.className = "btn btn-secondary";
+        prevBtn.textContent = "< Previous";
+        prevBtn.addEventListener("click", () => {
+          displayDateRangeData(prevStartDate, new Date(startDate));
+        });
+
+        // Create next button
+        const nextBtn = document.createElement("button");
+        nextBtn.className = "btn btn-secondary";
+        nextBtn.textContent = "Next >";
+        nextBtn.addEventListener("click", () => {
+          displayDateRangeData(nextStartDate, nextEndDate);
+        });
+
+        navDiv.appendChild(prevBtn);
+        navDiv.appendChild(nextBtn);
+        chartContainer.appendChild(navDiv);
+      }
+
+      // Add navigation for single day chart
+      function addSingleDayNavigation(date, chartContainer) {
+        const navDiv = document.createElement("div");
+        navDiv.className = "chart-navigation";
+
+        // Calculate previous and next dates
+        const prevDate = new Date(date);
+        prevDate.setDate(date.getDate() - 1);
+
+        const nextDate = new Date(date);
+        nextDate.setDate(date.getDate() + 1);
+
+        // Create previous button
+        const prevBtn = document.createElement("button");
+        prevBtn.className = "btn btn-secondary";
+        prevBtn.textContent = "< Previous Day";
+        prevBtn.addEventListener("click", () => {
+          displaySingleDayData(prevDate);
+        });
+
+        // Create next button
+        const nextBtn = document.createElement("button");
+        nextBtn.className = "btn btn-secondary";
+        nextBtn.textContent = "Next Day >";
+        nextBtn.addEventListener("click", () => {
+          displaySingleDayData(nextDate);
+        });
+
+        navDiv.appendChild(prevBtn);
+        navDiv.appendChild(nextBtn);
+        chartContainer.appendChild(navDiv);
+      }
+
+      function createDataTypeTabs(chartContainer) {
+        const tabsDiv = document.createElement("div");
+        tabsDiv.className = "data-type-tabs";
+        chartContainer.appendChild(tabsDiv);
+
+        const dataTypes = [
+          { id: "temperature", label: "Temperature" },
+          { id: "uvIndex", label: "UV Index" },
+          { id: "windSpeed", label: "Wind Speed" },
+          { id: "humidity", label: "Humidity" },
+        ];
+
+        dataTypes.forEach((type) => {
+          const tab = document.createElement("button");
+          tab.className = "data-tab";
+          tab.dataset.type = type.id;
+          tab.textContent = type.label;
+          if (type.id === "temperature") tab.classList.add("active");
+
+          tab.addEventListener("click", function () {
+            document
+              .querySelectorAll(".data-tab")
+              .forEach((t) => t.classList.remove("active"));
+            this.classList.add("active");
+
+            const chartDiv = chartContainer._chartDiv;
+            if (!chartDiv) {
+              console.error("No chartDiv found in chartContainer.");
+              return;
+            }
+            const viewType = chartDiv.dataset.viewType || "daily";
+            const storedData = chartDiv.dataset.weatherData || "[]";
+            let data;
+            try {
+              data = JSON.parse(storedData);
+              if (!Array.isArray(data))
+                throw new Error("Parsed data is not an array");
+            } catch (e) {
+              console.error("Failed to parse weather data:", e);
+              chartDiv.innerHTML = "<p>Invalid weather data format.</p>";
+              return;
+            }
+
+            switch (this.dataset.type) {
+              case "temperature":
+                displayTemperatureChart(data, viewType, chartContainer);
+                break;
+              case "uvIndex":
+                displayUVIndexChart(data, viewType, chartContainer);
+                break;
+              case "windSpeed":
+                displayWindSpeedChart(data, viewType, chartContainer);
+                break;
+              case "humidity":
+                displayHumidityChart(data, viewType, chartContainer);
+                break;
+              default:
+                console.warn("Unknown data type:", this.dataset.type);
+            }
+          });
+
+          tabsDiv.appendChild(tab);
+        });
+
+        const chartDiv = document.createElement("div");
+        chartDiv.id = `weatherChart-${Date.now()}`;
+        chartContainer.appendChild(chartDiv);
+        chartContainer._chartDiv = chartDiv;
+      }
+
+      // Add these chart display functions to your JavaScript file
+
+      // Display temperature chart with color coding
+      function displayTemperatureChart(data, viewType, chartContainer) {
+        const chartDiv = chartContainer._chartDiv;
+        if (!chartDiv) {
+          console.error("No chartDiv found in chartContainer.");
+          chartContainer.innerHTML =
+            "<p>Failed to initialize chart. Please try again.</p>";
+          return;
+        }
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          console.error("Invalid or empty data for Temperature chart:", data);
+          chartDiv.innerHTML = "<p>No temperature data available.</p>";
+          return;
+        }
+
+        chartDiv.dataset.weatherData = JSON.stringify(data);
+        chartDiv.dataset.viewType = viewType || "daily";
+        chartDiv.innerHTML = "";
+
+        const canvas = document.createElement("canvas");
+        chartDiv.appendChild(canvas);
+
+        const labels =
+          viewType === "hourly"
+            ? data.map((item) => item.hour)
+            : data.map((item) => item.date);
+        const temperatures = data.map((item) => item.temperature || 0);
+        const highTempThreshold = 30;
+
+        const pointBackgroundColors = temperatures.map((temp) =>
+          temp >= highTempThreshold
+            ? "rgba(255, 99, 132, 0.6)"
+            : "rgba(54, 162, 235, 0.6)"
+        );
+        const pointBorderColors = temperatures.map((temp) =>
+          temp >= highTempThreshold ? "rgb(255, 99, 132)" : "rgb(54, 162, 235)"
+        );
+
+        new Chart(canvas, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Temperature (°C)",
+                data: temperatures,
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                fill: true,
+                tension: 0.1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: pointBackgroundColors,
+                pointBorderColor: pointBorderColors,
+                pointBorderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: { display: true, text: "Temperature (°C)" },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: viewType === "hourly" ? "Time" : "Date",
+                },
+              },
+            },
+            plugins: {
+              legend: { display: true, position: "top" },
+              tooltip: {
+                callbacks: {
+                  afterLabel: function (context) {
+                    const temp = context.raw;
+                    if (temp >= highTempThreshold)
+                      return "High temperature warning!";
+                    return "";
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Display UV Index chart with color coding
+      function displayUVIndexChart(data, viewType, chartContainer) {
+        const chartDiv = chartContainer._chartDiv;
+        if (!chartDiv) {
+          console.error("No chartDiv found in chartContainer.");
+          chartContainer.innerHTML =
+            "<p>Failed to initialize chart. Please try again.</p>";
+          return;
+        }
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          console.error("Invalid or empty data for UV Index chart:", data);
+          chartDiv.innerHTML = "<p>No UV Index data available.</p>";
+          return;
+        }
+
+        chartDiv.dataset.weatherData = JSON.stringify(data);
+        chartDiv.dataset.viewType = viewType || "daily";
+        chartDiv.innerHTML = "";
+
+        const canvas = document.createElement("canvas");
+        chartDiv.appendChild(canvas);
+
+        const labels =
+          viewType === "hourly"
+            ? data.map((item) => item.hour || item.date)
+            : data.map((item) => item.date);
+        const uvValues = data.map((item) => item.uvIndex || 0);
+
+        const getUVColor = (uv) => {
+          if (uv <= 2) return "rgba(0, 128, 0, 0.6)"; // Green
+          if (uv <= 5) return "rgba(255, 255, 0, 0.6)"; // Yellow
+          if (uv <= 7) return "rgba(255, 165, 0, 0.6)"; // Orange
+          if (uv <= 10) return "rgba(255, 0, 0, 0.6)"; // Red
+          return "rgba(128, 0, 128, 0.6)"; // Purple
+        };
+
+        const pointBackgroundColors = uvValues.map((uv) => getUVColor(uv));
+        const pointBorderColors = uvValues.map((uv) =>
+          getUVColor(uv).replace("0.6", "1")
+        );
+
+        new Chart(canvas, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "UV Index",
+                data: uvValues,
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                fill: true,
+                tension: 0.1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: pointBackgroundColors,
+                pointBorderColor: pointBorderColors,
+                pointBorderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: "UV Index" },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: viewType === "hourly" ? "Time" : "Date",
+                },
+              },
+            },
+            plugins: {
+              legend: { display: true, position: "top" },
+              tooltip: {
+                callbacks: {
+                  afterLabel: function (context) {
+                    const uv = context.raw;
+                    if (uv <= 2) return "Low risk";
+                    if (uv <= 5)
+                      return "Moderate risk - protection recommended";
+                    if (uv <= 7) return "High risk - protection essential";
+                    if (uv <= 10)
+                      return "Very high risk - extra protection needed";
+                    return "Extreme risk - avoid outside exposure";
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Add these additional chart functions to your JavaScript file
+
+      function displayWindSpeedChart(data, viewType, chartContainer) {
+        const chartDiv = chartContainer._chartDiv;
+        if (!chartDiv) {
+          console.error("No chartDiv found in chartContainer.");
+          chartContainer.innerHTML =
+            "<p>Failed to initialize chart. Please try again.</p>";
+          return;
+        }
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          console.error("Invalid or empty data for Wind Speed chart:", data);
+          chartDiv.innerHTML = "<p>No Wind Speed data available.</p>";
+          return;
+        }
+
+        chartDiv.dataset.weatherData = JSON.stringify(data);
+        chartDiv.dataset.viewType = viewType || "daily";
+        chartDiv.innerHTML = "";
+
+        const canvas = document.createElement("canvas");
+        chartDiv.appendChild(canvas);
+
+        const labels =
+          viewType === "hourly"
+            ? data.map((item) => item.hour)
+            : data.map((item) => item.date);
+        const windSpeeds = data.map((item) => item.windSpeed || 0);
+
+        const getWindColor = (speed) => {
+          if (speed < 20) return "rgba(0, 128, 0, 0.6)"; // Green
+          if (speed < 39) return "rgba(255, 255, 0, 0.6)"; // Yellow
+          if (speed < 62) return "rgba(255, 165, 0, 0.6)"; // Orange
+          if (speed < 89) return "rgba(255, 0, 0, 0.6)"; // Red
+          return "rgba(128, 0, 128, 0.6)"; // Purple
+        };
+
+        const pointBackgroundColors = windSpeeds.map((speed) =>
+          getWindColor(speed)
+        );
+        const pointBorderColors = windSpeeds.map((speed) =>
+          getWindColor(speed).replace("0.6", "1")
+        );
+
+        new Chart(canvas, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Wind Speed (km/h)",
+                data: windSpeeds,
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                fill: true,
+                tension: 0.1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: pointBackgroundColors,
+                pointBorderColor: pointBorderColors,
+                pointBorderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: "Wind Speed (km/h)" },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: viewType === "hourly" ? "Time" : "Date",
+                },
+              },
+            },
+            plugins: {
+              legend: { display: true, position: "top" },
+              tooltip: {
+                callbacks: {
+                  afterLabel: function (context) {
+                    const speed = context.raw;
+                    if (speed < 20) return "Calm to light breeze";
+                    if (speed < 39) return "Moderate breeze";
+                    if (speed < 62) return "Strong wind - caution advised";
+                    if (speed < 89) return "Gale force - danger";
+                    return "Storm conditions - extreme danger";
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Display Humidity chart with color coding
+      function displayHumidityChart(data, viewType, chartContainer) {
+        const chartDiv = chartContainer._chartDiv;
+        if (!chartDiv) {
+          console.error("No chartDiv found in chartContainer.");
+          chartContainer.innerHTML =
+            "<p>Failed to initialize chart. Please try again.</p>";
+          return;
+        }
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          console.error("Invalid or empty data for Humidity chart:", data);
+          chartDiv.innerHTML = "<p>No humidity data available.</p>";
+          return;
+        }
+
+        chartDiv.dataset.weatherData = JSON.stringify(data);
+        chartDiv.dataset.viewType = viewType || "daily";
+        chartDiv.innerHTML = "";
+
+        const canvas = document.createElement("canvas");
+        chartDiv.appendChild(canvas);
+
+        const labels =
+          viewType === "hourly"
+            ? data.map((item) => item.hour)
+            : data.map((item) => item.date);
+        const humidityValues = data.map((item) => item.humidity || 0);
+
+        const getHumidityColor = (humidity) => {
+          if (humidity >= 30 && humidity <= 50) return "rgba(0, 128, 0, 0.6)"; // Green
+          if (humidity >= 20 && humidity < 30) return "rgba(255, 255, 0, 0.6)"; // Yellow
+          if (humidity > 50 && humidity <= 70) return "rgba(255, 255, 0, 0.6)"; // Yellow
+          return "rgba(255, 0, 0, 0.6)"; // Red
+        };
+
+        const pointBackgroundColors = humidityValues.map((humidity) =>
+          getHumidityColor(humidity)
+        );
+        const pointBorderColors = humidityValues.map((humidity) =>
+          getHumidityColor(humidity).replace("0.6", "1")
+        );
+
+        new Chart(canvas, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Humidity (%)",
+                data: humidityValues,
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                fill: true,
+                tension: 0.1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: pointBackgroundColors,
+                pointBorderColor: pointBorderColors,
+                pointBorderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: { display: true, text: "Humidity (%)" },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: viewType === "hourly" ? "Time" : "Date",
+                },
+              },
+            },
+            plugins: {
+              legend: { display: true, position: "top" },
+              tooltip: {
+                callbacks: {
+                  afterLabel: function (context) {
+                    const humidity = context.raw;
+                    if (humidity >= 30 && humidity <= 50)
+                      return "Comfortable range";
+                    if (humidity >= 20 && humidity < 30)
+                      return "Dry - consider humidifier";
+                    if (humidity > 50 && humidity <= 70)
+                      return "Humid - may feel uncomfortable";
+                    if (humidity < 20)
+                      return "Very dry - health and static risks";
+                    return "Very humid - health risks, mold growth possible";
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Add these data fetching functions to your JavaScript file
+
+      // Fetch data for a date range (replace with your actual API call)
+      function fetchDateRangeData(lat, lon, startDate, endDate) {
+        const start = startDate.toISOString().split("T")[0];
+        const end = endDate.toISOString().split("T")[0];
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,uv_index_max,windspeed_10m_max,relative_humidity_2m_mean&start_date=${start}&end_date=${end}&timezone=auto`;
+
+        alert(url);
+
+        return fetch(url)
+          .then((response) => {
+            if (!response.ok) {
+              console.error(
+                `API request failed with status ${response.status}`
+              );
+              return {
+                daily: {
+                  time: [],
+                  temperature_2m_max: [],
+                  uv_index_max: [],
+                  windspeed_10m_max: [],
+                  relative_humidity_2m_mean: [],
+                },
+              };
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (!data.daily || !data.daily.time) {
+              console.warn(
+                "Invalid data format from API, returning empty data"
+              );
+              return [];
+            }
+            return data.daily.time.map((time, index) => ({
+              date: new Date(time).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              }),
+              temperature: data.daily.temperature_2m_max[index] || null,
+              uvIndex: data.daily.uv_index_max[index] || null,
+              windSpeed: data.daily.windspeed_10m_max[index] || null,
+              humidity: data.daily.relative_humidity_2m_mean[index] || null,
+            }));
+          })
+          .catch((error) => {
+            console.error("Error in fetchDateRangeData:", error);
+            return []; // Return empty array on error
+          });
+      }
+
+      // Fetch data for a single day (replace with your actual API call)
+      function fetchSingleDayData(date) {
+        // This is a placeholder - replace with your actual API call
+        return new Promise((resolve, reject) => {
+          // For demonstration, creating mock hourly data
+          try {
+            const hours = [];
+
+            for (let i = 0; i < 24; i++) {
+              hours.push({
+                hour: `${i}:00`,
+                temperature: Math.round(Math.random() * 20 + 10), // 10-30°C
+                uvIndex: i > 6 && i < 20 ? Math.round(Math.random() * 11) : 0, // UV during daylight
+                windSpeed: Math.round(Math.random() * 50 + 5), // 5-55 km/h
+                humidity: Math.round(Math.random() * 50 + 30), // 30-80%
+              });
+            }
+
+            setTimeout(() => resolve(hours), 500); // Simulate network delay
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      let markerMap = {};
+
       async function createCityMarkers() {
         // Clear existing markers
         markers.clearLayers();
-        
+
         cities.forEach((city) => {
           if (!city.lat || !city.lon) {
             console.error("Invalid coordinates for city:", city.tags.name);
             return;
           }
-          
-          console.log("Creating marker for city:", city.tags.name, city.lat, city.lon);
-          
+
+          console.log(
+            "Creating marker for city:",
+            city.tags.name,
+            city.lat,
+            city.lon
+          );
+
           // Initial popup that shows only the city name and a load button
           const initialPopupContent = `
-            <div class="weather-popup">
-              <h3>${city.tags.name}</h3>
-              <button class="load-weather-btn" 
-                data-city-id="${city.id}" 
-                data-lat="${city.lat}" 
-                data-lon="${city.lon}"
-                data-city-name="${city.tags.name}">
-                Load Weather Data
-              </button>
-            </div>
-          `;
+                  <div class="weather-popup">
+                    <h3>${city.tags.name}</h3>
+                    <button class="load-weather-btn"
+                      data-city-id="${city.id}"
+                      data-lat="${city.lat}"
+                      data-lon="${city.lon}"
+                      data-city-name="${city.tags.name}">
+                      Load Weather Data
+                    </button>
+                  </div>
+                `;
 
           // Create and configure the marker
           const marker = L.marker([city.lat, city.lon]);
           marker.bindPopup(initialPopupContent, { closeButton: true });
-          
+
           // Add marker to cluster group
           markers.addLayer(marker);
-          
-          console.log(`Marker added for ${city.tags.name} at [${city.lat}, ${city.lon}]`);
-          
+          markerMap[city.id] = marker;
+
+          console.log(
+            `Marker added for ${city.tags.name} at [${city.lat}, ${city.lon}]`
+          );
+
           city.marker = marker;
         });
       }
-      
-      // Function to load weather data only when requested
+
       async function loadWeatherForCity(cityId, lat, lon, cityName) {
-        // Get the marker popup
         const popup = L.popup()
           .setLatLng([lat, lon])
-          .setContent(`
-            <div class="loading-spinner">
-              Loading weather data for ${cityName}...
-            </div>
-          `)
+          .setContent(
+            `<div class="loading-spinner">Loading weather data for ${cityName}...</div>`
+          )
           .openOn(map);
 
         try {
-          // Check if weather data is already cached
-          let data;
-          if (weatherCache[cityId]) {
-            data = weatherCache[cityId];
-            console.log("Using cached weather data for", cityName);
-          } else {
-            // Fetch weather data if not cached
-            data = await getWeatherData(lat, lon);
-            if (data) {
-              weatherCache[cityId] = data;
-              console.log("Fetched and cached weather data for", cityName);
-            } else {
-              throw new Error("Failed to fetch weather data");
-            }
-          }
-          
-          // Update popup with weather data
+          let data = weatherCache[cityId] || (await getWeatherData(lat, lon));
+          if (!data) throw new Error("Failed to fetch weather data");
+          weatherCache[cityId] = data;
+
           const weatherPopupContent = `
-            <div class="weather-popup">
-              <h3>${cityName}</h3>
-              <p>🌡️ Temperature: ${data.current_weather.temperature}°C</p>
-              <p>🌬️ Wind: ${data.current_weather.windspeed} km/h</p>
-              <p>💧 Humidity: ${data.hourly.relativehumidity_2m[0]}%</p>
-              <p>☀️ UV Index: ${data.daily.uv_index_max[0]}</p>
-              <button class="forecast-btn" data-lat="${lat}" data-lon="${lon}">7-Day Forecast</button>
-              <button class="history-btn" data-lat="${lat}" data-lon="${lon}">Historical Data</button>
-              <button class="hourly-temp-btn" data-lat="${lat}" data-lon="${lon}">Hourly Temperature</button>
-            </div>
-          `;
-          
-          // Update the popup content
+                  <div class="weather-popup">
+                      <h3>${cityName}</h3>
+                      <p>🌡️ Temperature: ${data.current_weather.temperature}°C</p>
+                      <p>🌬️ Wind: ${data.current_weather.windspeed} km/h</p>
+                      <p>💧 Humidity: ${data.hourly.relativehumidity_2m[0]}%</p>
+                      <p>☀️ UV Index: ${data.daily.uv_index_max[0]}</p>
+                      <div class="forecast-controls">
+                          <button id="forecastHistoryBtn-${cityId}" class="btn btn-primary">Forecast/History</button>
+                      </div>
+                      <button class="hourly-temp-btn" data-lat="${lat}" data-lon="${lon}">Hourly Temperature</button>
+                      <div id="chartContainer-${cityId}" style="display: none; max-height: 300px; overflow-y: auto;"></div>
+                  </div>
+                  <div id="calendarModal-${cityId}" class="modal">
+                      <div class="modal-content">
+                          <span class="close" data-city-id="${cityId}">×</span>
+                          <h3>Select Date(s)</h3>
+                          <div class="date-selection">
+                              <div>
+                                  <label for="startDate-${cityId}">Start Date:</label>
+                                  <input type="date" id="startDate-${cityId}">
+                              </div>
+                              <div>
+                                  <label for="endDate-${cityId}">End Date (optional):</label>
+                                  <input type="date" id="endDate-${cityId}">
+                              </div>
+                          </div>
+                          <button id="applyDateSelection-${cityId}" class="btn btn-primary" data-city-id="${cityId}">Apply</button>
+                      </div>
+                  </div>
+              `;
+
+          // Set the popup content
           popup.setContent(weatherPopupContent);
-          
+
+          // Wait for the popup content to render in the DOM
+          setTimeout(() => {
+            const popupElement = popup.getElement();
+            if (!popupElement) {
+              console.error("Popup element not found");
+              return;
+            }
+
+            // Use dynamic IDs with cityId
+            const forecastBtn = popupElement.querySelector(
+              `#forecastHistoryBtn-${cityId}`
+            );
+            const calendarModal = popupElement.querySelector(
+              `#calendarModal-${cityId}`
+            );
+            const closeBtn = calendarModal.querySelector(".close");
+            const applyBtn = popupElement.querySelector(
+              `#applyDateSelection-${cityId}`
+            );
+            const startDateInput = popupElement.querySelector(
+              `#startDate-${cityId}`
+            );
+            const endDateInput = popupElement.querySelector(
+              `#endDate-${cityId}`
+            );
+            const chartContainer = popupElement.querySelector(
+              `#chartContainer-${cityId}`
+            );
+
+            // Attach event listeners
+            if (forecastBtn) {
+              forecastBtn.addEventListener("click", () => {
+                calendarModal.style.display = "block";
+              });
+            }
+            if (closeBtn) {
+              closeBtn.addEventListener("click", () => {
+                calendarModal.style.display = "none";
+              });
+            }
+            if (applyBtn) {
+              applyBtn.addEventListener("click", () => {
+                const startDate = startDateInput.value
+                  ? new Date(startDateInput.value)
+                  : null;
+                const endDate = endDateInput.value
+                  ? new Date(endDateInput.value)
+                  : null;
+                if (startDate) {
+                  calendarModal.style.display = "none";
+                  chartContainer.style.display = "block";
+                  if (endDate && endDate > startDate) {
+                    displayDateRangeData(
+                      lat,
+                      lon,
+                      startDate,
+                      endDate,
+                      chartContainer
+                    ); // Pass lat and lon
+                  } else {
+                    displaySingleDayData(startDate, chartContainer); // Note: This function also needs adjustment if it’s used
+                  }
+                } else {
+                  alert("Please select at least a start date");
+                }
+              });
+            }
+          }, 200); // 100ms delay to ensure DOM is ready
         } catch (error) {
           console.error("Error loading weather data:", error);
           popup.setContent(`
-            <div class="weather-popup">
-              <h3>${cityName}</h3>
-              <p>Error loading weather data. Please try again.</p>
-              <button class="load-weather-btn" 
-                data-city-id="${cityId}" 
-                data-lat="${lat}" 
-                data-lon="${lon}"
-                data-city-name="${cityName}">
-                Retry
-              </button>
-            </div>
-          `);
+                  <div class="weather-popup">
+                      <h3>${cityName}</h3>
+                      <p>Error loading weather data. Please try again.</p>
+                      <button class="load-weather-btn"
+                          data-city-id="${cityId}"
+                          data-lat="${lat}"
+                          data-lon="${lon}"
+                          data-city-name="${cityName}">
+                          Retry
+                      </button>
+                  </div>
+              `);
         }
       }
 
@@ -372,7 +1293,7 @@
       if (map.getZoom() >= 7) {
         loadCities().then(createCityMarkers);
       }
-      
+
       async function getWeatherData(lat, lon) {
         console.log(`Fetching weather for: ${lat}, ${lon}`);
 
@@ -392,13 +1313,15 @@
       // Show forecast data
       async function showForecast(lat, lon) {
         console.log("Showing forecast for:", lat, lon);
-        
+
         // Show loading popup
         const loadingPopup = L.popup()
           .setLatLng([lat, lon])
-          .setContent('<div class="loading-spinner">Loading forecast data...</div>')
+          .setContent(
+            '<div class="loading-spinner">Loading forecast data...</div>'
+          )
           .openOn(map);
-          
+
         const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max,precipitation_sum&forecast_days=7`;
 
         try {
@@ -408,13 +1331,13 @@
           const forecastContent = data.daily.time
             .map(
               (date, index) => `
-                <div class="forecast-day">
-                  <strong>${date}</strong><br>
-                  Max: ${data.daily.temperature_2m_max[index]}°C<br>
-                  Min: ${data.daily.temperature_2m_min[index]}°C<br>
-                  Wind: ${data.daily.windspeed_10m_max[index]} km/h
-                </div>
-              `
+                      <div class="forecast-day">
+                        <strong>${date}</strong><br>
+                        Max: ${data.daily.temperature_2m_max[index]}°C<br>
+                        Min: ${data.daily.temperature_2m_min[index]}°C<br>
+                        Wind: ${data.daily.windspeed_10m_max[index]} km/h
+                      </div>
+                    `
             )
             .join("");
 
@@ -423,20 +1346,24 @@
           );
         } catch (error) {
           console.error("Error fetching forecast data:", error);
-          loadingPopup.setContent("<div class='weather-popup'><h3>Error fetching forecast</h3></div>");
+          loadingPopup.setContent(
+            "<div class='weather-popup'><h3>Error fetching forecast</h3></div>"
+          );
         }
       }
 
       // Show historical data (past 7 days)
       async function showHistory(lat, lon) {
         console.log("Showing history for:", lat, lon);
-        
+
         // Show loading popup
         const loadingPopup = L.popup()
           .setLatLng([lat, lon])
-          .setContent('<div class="loading-spinner">Loading historical data...</div>')
+          .setContent(
+            '<div class="loading-spinner">Loading historical data...</div>'
+          )
           .openOn(map);
-          
+
         const endDate = new Date().toISOString().split("T")[0];
         const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           .toISOString()
@@ -451,13 +1378,13 @@
           const historyContent = data.daily.time
             .map(
               (date, index) => `
-                <div class="history-day">
-                  <strong>${date}</strong><br>
-                  Max Temp: ${data.daily.temperature_2m_max[index]}°C<br>
-                  Wind: ${data.daily.windspeed_10m_max[index]} km/h<br>
-                  Rain: ${data.daily.precipitation_sum[index]} mm
-                </div>
-              `
+                      <div class="history-day">
+                        <strong>${date}</strong><br>
+                        Max Temp: ${data.daily.temperature_2m_max[index]}°C<br>
+                        Wind: ${data.daily.windspeed_10m_max[index]} km/h<br>
+                        Rain: ${data.daily.precipitation_sum[index]} mm
+                      </div>
+                    `
             )
             .join("");
 
@@ -466,69 +1393,82 @@
           );
         } catch (error) {
           console.error("Error fetching historical data:", error);
-          loadingPopup.setContent("<div class='weather-popup'><h3>Error fetching historical data</h3></div>");
+          loadingPopup.setContent(
+            "<div class='weather-popup'><h3>Error fetching historical data</h3></div>"
+          );
         }
       }
-      
+
       // Show hourly temperature chart
       async function showHourlyTemperature(lat, lon) {
         console.log("Showing hourly temperature for:", lat, lon);
-        
+
         // Show loading popup
         const loadingPopup = L.popup()
           .setLatLng([lat, lon])
-          .setContent('<div class="loading-spinner">Loading hourly temperature data...</div>')
+          .setContent(
+            '<div class="loading-spinner">Loading hourly temperature data...</div>'
+          )
           .openOn(map);
-          
+
         const hourlyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&forecast_days=1&timezone=auto`;
 
         try {
           const response = await fetch(hourlyUrl);
           const data = await response.json();
-          
-          if (!data.hourly || !data.hourly.temperature_2m || !data.hourly.time) {
+
+          if (
+            !data.hourly ||
+            !data.hourly.temperature_2m ||
+            !data.hourly.time
+          ) {
             throw new Error("Invalid data format received from API");
           }
-          
+
           // Process the data for the chart
-          const chartLabels = data.hourly.time.map(time => {
+          const chartLabels = data.hourly.time.map((time) => {
             const date = new Date(time);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
           });
-          
+
           const chartData = data.hourly.temperature_2m;
-          const unit = data.hourly_units?.temperature_2m || '°C';
-          
+          const unit = data.hourly_units?.temperature_2m || "°C";
+
           // Create a unique ID for the chart canvas
           const chartId = `temp-chart-${Date.now()}`;
-          
+
           // Update popup with chart container
           loadingPopup.setContent(`
-            <div class="weather-popup">
-              <h3>24-Hour Temperature Forecast</h3>
-              <div class="chart-container">
-                <canvas id="${chartId}"></canvas>
-              </div>
-            </div>
-          `);
-          
+                  <div class="weather-popup">
+                    <h3>24-Hour Temperature Forecast</h3>
+                    <div class="chart-container">
+                      <canvas id="${chartId}"></canvas>
+                    </div>
+                  </div>
+                `);
+
           // Wait for the DOM to update
           setTimeout(() => {
-            const ctx = document.getElementById(chartId).getContext('2d');
-            
+            const ctx = document.getElementById(chartId).getContext("2d");
+
             new Chart(ctx, {
-              type: 'line',
+              type: "line",
               data: {
                 labels: chartLabels,
-                datasets: [{
-                  label: `Temperature (${unit})`,
-                  data: chartData,
-                  borderColor: 'rgb(75, 192, 192)',
-                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                  tension: 0.1,
-                  pointRadius: 2,
-                  pointHoverRadius: 5
-                }]
+                datasets: [
+                  {
+                    label: `Temperature (${unit})`,
+                    data: chartData,
+                    borderColor: "rgb(75, 192, 192)",
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    tension: 0.1,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                  },
+                ],
               },
               options: {
                 responsive: true,
@@ -537,42 +1477,43 @@
                   y: {
                     title: {
                       display: true,
-                      text: `Temperature (${unit})`
-                    }
+                      text: `Temperature (${unit})`,
+                    },
                   },
                   x: {
                     ticks: {
                       maxRotation: 90,
                       minRotation: 45,
                       autoSkip: true,
-                      maxTicksLimit: 12
+                      maxTicksLimit: 12,
                     },
                     title: {
                       display: true,
-                      text: 'Time'
-                    }
-                  }
+                      text: "Time",
+                    },
+                  },
                 },
                 plugins: {
                   legend: {
                     display: true,
-                    position: 'top'
+                    position: "top",
                   },
                   tooltip: {
                     callbacks: {
-                      label: function(context) {
+                      label: function (context) {
                         return `${context.dataset.label}: ${context.parsed.y}`;
-                      }
-                    }
-                  }
-                }
-              }
+                      },
+                    },
+                  },
+                },
+              },
             });
           }, 100);
-          
         } catch (error) {
           console.error("Error fetching hourly temperature data:", error);
-          loadingPopup.setContent("<div class='weather-popup'><h3>Error fetching hourly temperature data</h3></div>");
+          loadingPopup.setContent(
+            "<div class='weather-popup'><h3>Error fetching hourly temperature data</h3></div>"
+          );
         }
       }
 
