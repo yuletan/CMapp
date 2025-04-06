@@ -1113,7 +1113,28 @@
         });
       }
 
+      function translateText() {
+        fetch("http://127.0.0.1:5000/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: "Hello", target_lang: "es" }),
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error("Request failed");
+            return response.json();
+          })
+          .then((data) => console.log("Translated text:", data.translated_text))
+          .catch((error) => console.error("Error:", error));
+      }
+      
       async function loadWeatherForCity(cityId, lat, lon, cityName) {
+        console.log(
+          "Starting loadWeatherForCity for:",
+          cityName,
+          "at",
+          lat,
+          lon
+        );
         const popup = L.popup()
           .setLatLng([lat, lon])
           .setContent(
@@ -1124,7 +1145,41 @@
         try {
           let data = weatherCache[cityId] || (await getWeatherData(lat, lon));
           if (!data) throw new Error("Failed to fetch weather data");
+          console.log("Weather data retrieved:", data);
           weatherCache[cityId] = data;
+
+          // --- NEW: Translation of API-based description ---
+          // Assume data.current_weather contains a "description" field.
+          let description =
+            data.current_weather.description || "No description available";
+          const targetLang = document.getElementById("languageSelect").value;
+          const translationPayload = {
+            text: description,
+            target_lang: targetLang,
+          };
+          console.log("Preparing to translate:", translationPayload);
+          console.log("Sending POST request to /translate");
+
+          const translationResponse = await fetch("/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(translationPayload),
+          });
+          console.log(
+            "Translation response status:",
+            translationResponse.status
+          );
+
+          if (!translationResponse.ok) {
+            throw new Error(
+              `Translation failed with status: ${translationResponse.status}`
+            );
+          }
+          const translationData = await translationResponse.json();
+          console.log("Translation data received:", translationData);
+          let translatedDescription =
+            translationData.translated_text || description;
+          // --- End translation block ---
 
           const weatherPopupContent = `
                   <div class="weather-popup">
